@@ -18,6 +18,10 @@ CHAT_MODEL = "sarvam-105b-conversations"
 _client = None
 
 
+class SarvamError(Exception):
+    """A Sarvam call failed (network, rate limit, bad reply)."""
+
+
 def client():
     global _client
     if _client is None:
@@ -33,7 +37,10 @@ def chat(messages, model=MODEL, **kwargs):
     kwargs.setdefault("max_tokens", 8000)
     if model == MODEL:
         kwargs.setdefault("reasoning_effort", "low")
-    response = client().chat.completions(model=model, messages=messages, **kwargs)
+    try:
+        response = client().chat.completions(model=model, messages=messages, **kwargs)
+    except Exception as e:
+        raise SarvamError(f"{type(e).__name__}: {e}") from e
     return (response.choices[0].message.content or "").strip()
 
 

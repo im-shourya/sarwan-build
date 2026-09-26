@@ -13,3 +13,9 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: python -m py_compile *.py
+      - name: Smoke test
+        run: |
+          uvicorn server:app --port 8000 &
+          for i in $(seq 1 20); do curl -sf localhost:8000/api/health && break; sleep 1; done
+          curl -sf localhost:8000/api/health
+          curl -sf -o /dev/null localhost:8000/

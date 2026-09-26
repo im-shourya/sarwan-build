@@ -1,5 +1,5 @@
 const $ = (sel) => document.querySelector(sel);
-const md = (text) => marked.parse(text || "");
+const md = (text) => DOMPurify.sanitize(marked.parse(text || ""));
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 const store = {
@@ -25,7 +25,11 @@ async function api(path, body, isForm = false) {
   };
   const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || `Request failed (${res.status})`);
+  if (!res.ok) {
+    // FastAPI validation errors arrive as a list.
+    const detail = Array.isArray(data.detail) ? data.detail.map((d) => `${d.loc.at(-1)}: ${d.msg}`).join("; ") : data.detail;
+    throw new Error(detail || `Request failed (${res.status})`);
+  }
   return data;
 }
 
@@ -118,7 +122,7 @@ $("#profile-form").addEventListener("submit", (e) => {
     store.id = row.id;
     renderProfile();
     renderRoadmap();
-    toast("Profile saved.");
+    toast(row.warning || "Profile saved.");
     show("roadmap");
   });
 });
