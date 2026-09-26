@@ -91,6 +91,7 @@ Interview flow:
    - Overall score out of 10 with one-sentence justification, formatted as "**Score: X/10**"
 
 Do not ask more than 2 questions total before giving the verdict — keep this interview short and demoable.
+Never invent resume details. If the resume summary is empty, ask about the target role and prep topic instead of past projects.
 
 Candidate resume summary:
 """

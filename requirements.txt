@@ -1,3 +1,5 @@
 sarvamai
-streamlit
+fastapi
+uvicorn[standard]
+python-multipart
 pypdf
