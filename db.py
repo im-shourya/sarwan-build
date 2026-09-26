@@ -37,6 +37,10 @@ def insert(table, row):
 
 
 def get(table, row_id):
+    try:
+        uuid.UUID(str(row_id))
+    except ValueError:
+        return None
     if not ENABLED:
         return _memory[table].get(row_id)
     with _http() as http:

@@ -2,18 +2,25 @@ import io
 import json
 import re
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pypdf import PdfReader
 
 import db
 import fallback
 import prompts
-from sarvam_client import CHAT_MODEL, ask, chat, parse_json
+from sarvam_client import CHAT_MODEL, SarvamError, ask, chat, parse_json
 
 app = FastAPI(title="PrepPilot")
+
+MAX_RESUME_BYTES = 5 * 1024 * 1024
+
+
+@app.exception_handler(SarvamError)
+def sarvam_error(request: Request, exc: SarvamError):
+    return JSONResponse(status_code=502, content={"detail": "The AI service failed or timed out. Please try again."})
 
 VERDICT_MARKER = re.compile(r"\n[#*\s]*verdict", re.IGNORECASE)
 VERDICT_NOW = (
@@ -37,11 +44,11 @@ def health():
 
 @app.post("/api/profile")
 def create_profile(
-    target_role: str = Form(...),
-    target_companies: str = Form(""),
-    college: str = Form(""),
-    year: str = Form(""),
-    comfort_level: str = Form("Intermediate"),
+    target_role: str = Form(..., max_length=100),
+    target_companies: str = Form("", max_length=300),
+    college: str = Form("", max_length=200),
+    year: str = Form("", max_length=20),
+    comfort_level: str = Form("Intermediate", pattern="^(Beginner|Intermediate|Advanced)$"),
     resume: UploadFile | None = File(None),
 ):
     profile = {
@@ -51,16 +58,24 @@ def create_profile(
         "year": year,
         "comfortLevel": comfort_level,
     }
-    resume_data = None
+    resume_data, warning = None, None
     if resume and resume.filename:
-        text = "\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(resume.file.read())).pages)
-        if not text.strip():
-            raise HTTPException(422, "No text found in that PDF. Is it a scanned image?")
+        data = resume.file.read(MAX_RESUME_BYTES + 1)
+        if len(data) > MAX_RESUME_BYTES:
+            raise HTTPException(413, "Resume must be under 5 MB.")
         try:
-            resume_data = parse_json(ask(prompts.RESUME_EXTRACTION.format(resume_text=text[:12000])))
-        except Exception as e:
-            raise HTTPException(502, f"Resume extraction failed: {e}")
-    return db.insert("profiles", {"profile": profile, "resume": resume_data})
+            text = "\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(data)).pages)
+        except Exception:
+            text = ""
+        if not text.strip():
+            warning = "Couldn't read text from that PDF (is it a scanned image?). Saved your profile without it."
+        else:
+            try:
+                resume_data = parse_json(ask(prompts.RESUME_EXTRACTION.format(resume_text=text[:12000])))
+            except Exception:
+                warning = "Resume parsing failed. Saved your profile without it."
+    row = db.insert("profiles", {"profile": profile, "resume": resume_data})
+    return {**row, "warning": warning}
 
 
 @app.get("/api/profile/{profile_id}")
@@ -95,8 +110,8 @@ def create_roadmap(req: RoadmapRequest):
 
 class TopicRequest(BaseModel):
     profile_id: str
-    topic: str
-    category: str
+    topic: str = Field(max_length=200)
+    category: str = Field(max_length=50)
 
 
 @app.post("/api/topic")
@@ -115,8 +130,8 @@ def explain_topic(req: TopicRequest):
 
 
 class ReviewRequest(BaseModel):
-    problem: str
-    code: str
+    problem: str = Field(max_length=4000)
+    code: str = Field(max_length=20000)
 
 
 @app.post("/api/review")
@@ -126,13 +141,13 @@ def review_code(req: ReviewRequest):
 
 class InterviewStart(BaseModel):
     profile_id: str
-    company: str
-    kind: str = "Technical"
-    topic: str | None = None
+    company: str = Field(max_length=100)
+    kind: str = Field("Technical", pattern="^(Technical|HR)$")
+    topic: str | None = Field(None, max_length=200)
 
 
 class InterviewReply(BaseModel):
-    answer: str
+    answer: str = Field(min_length=1, max_length=4000)
 
 
 def public_messages(messages):
