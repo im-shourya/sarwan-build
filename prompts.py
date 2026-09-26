@@ -52,25 +52,80 @@ Resume summary (if available):
 {resume_json}
 """'''
 
-TOPIC_PRACTICE = '''You are a technical interview prep coach. The candidate is preparing for {target_role} interviews at {companies} and their comfort level is {level}.
+TOPIC_EXPLAIN = '''You are a technical interview prep coach. The candidate is preparing for {target_role} interviews at {companies}; comfort level: {level}.
 
 Topic: {topic} ({category})
 
-Respond in markdown with:
-1. A concise explanation of the topic (under 150 words), focused on what interviewers expect.
-2. Three practice questions of increasing difficulty. For DSA, include a one-line problem statement with example input/output.'''
+Explain this topic in markdown, under 250 words:
+- What it is, in two or three sentences.
+- The key ideas interviewers probe, as a short bullet list.
+- One common mistake candidates make.
+- For DSA topics, one short Python snippet showing the core pattern.'''
 
-CODE_REVIEW = '''You are a senior engineer reviewing a candidate's solution to a DSA problem. You are NOT executing this code — reason about it purely by reading it.
+QUIZ = '''You are writing a multiple-choice quiz for a candidate preparing for {target_role} interviews; comfort level: {level}.
 
-Given the problem statement and the candidate's submitted code, respond with:
-1. Correctness: does the logic solve the stated problem? Note any edge cases it misses.
-2. Time complexity: state Big-O and briefly justify it from the code structure.
-3. Space complexity: state Big-O and briefly justify it.
-4. A better approach (if one exists): describe it in plain language, and explain the complexity improvement it offers. If the current approach is already optimal, say so.
+Topic: {topic} ({category})
 
-Keep the whole response under 200 words. Be direct and specific to this code, not generic advice.
+Write {count} questions of mixed difficulty that test understanding, not trivia. Return JSON with this exact shape:
 
-Problem statement:
+{{
+  "questions": [
+    {{
+      "question": string,
+      "options": [string, string, string, string],
+      "answerIndex": number,      // 0-3, index of the correct option
+      "explanation": string       // one or two sentences on why it is correct
+    }}
+  ]
+}}
+
+Rules:
+- Exactly 4 options per question, exactly one correct.
+- Vary the position of the correct answer.
+- Return ONLY the JSON object, no preamble, no markdown fences.'''
+
+PROBLEM = '''You are an interviewer writing a coding problem for a {target_role} candidate; comfort level: {level}.
+
+Topic: {topic}
+Difficulty: {difficulty}
+
+Write one original interview-style coding problem that exercises this topic. Return JSON with this exact shape:
+
+{{
+  "title": string,
+  "statement": string,                     // markdown allowed
+  "examples": [{{ "input": string, "output": string, "explanation": string }}],
+  "constraints": [string],
+  "starterCode": {{
+    "python": string,
+    "javascript": string,
+    "java": string,
+    "cpp": string
+  }}
+}}
+
+Rules:
+- 2 examples.
+- Starter code is only a function signature with an empty body and a comment, in each language. Do not include a solution.
+- Return ONLY the JSON object, no preamble, no markdown fences.'''
+
+CODE_REVIEW = '''You are a senior engineer reviewing a candidate's {language} solution to a coding problem. You are NOT executing this code — reason about it purely by reading it.
+
+Return JSON with this exact shape:
+
+{{
+  "verdict": "correct" | "partially correct" | "incorrect",
+  "summary": string,              // one sentence
+  "timeComplexity": string,       // Big-O plus a short justification
+  "spaceComplexity": string,      // Big-O plus a short justification
+  "issues": [string],             // bugs or missed edge cases; empty if none
+  "betterApproach": string | null,// plain-language description and its complexity, or null if already optimal
+  "score": number                 // 0-10
+}}
+
+Be direct and specific to this code, not generic advice. Return ONLY the JSON object, no preamble, no markdown fences.
+
+Problem:
 """
 {problem_statement}
 """

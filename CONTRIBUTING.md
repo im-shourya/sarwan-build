@@ -16,10 +16,11 @@ cp .env.example .env   # fill in the keys
 uvicorn server:app --reload
 ```
 
-Without `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` the app keeps data in memory (lost on restart).
+Accounts use Supabase Auth, so `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are required to sign in.
+Sign-up creates users already confirmed (no email step).
 
 ## Deploying
 
-1. Run `supabase/schema.sql` in the Supabase SQL editor.
+1. Run `supabase/schema.sql` in the Supabase SQL editor (safe to re-run after schema changes).
 2. Deploy on Render with `render.yaml` (Docker), or run the `Dockerfile` on any host.
 3. Set `SARVAM_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` as environment variables.

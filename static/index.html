@@ -4,111 +4,193 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PrepPilot</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%231f5c4a%27/%3E%3Cpath d=%27M9 22V10h7a4.5 4.5 0 010 9h-7%27 stroke=%27white%27 stroke-width=%273%27 fill=%27none%27/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">PrepPilot</div>
-    <nav id="nav">
-      <button data-view="onboarding" class="active"><span>1</span>Profile</button>
-      <button data-view="roadmap"><span>2</span>Roadmap</button>
-      <button data-view="practice"><span>3</span>Practice</button>
-      <button data-view="interview"><span>4</span>Interview</button>
-    </nav>
-    <div id="who" class="who"></div>
-  </header>
+  <div id="boot" class="boot">Loading…</div>
 
-  <main>
-    <!-- Onboarding -->
-    <section id="view-onboarding" class="view active">
-      <h1>Set up your prep</h1>
-      <p class="lede">Your role, targets and resume shape the roadmap and the interview questions.</p>
-      <form id="profile-form" class="card form">
-        <label>Target role<input name="target_role" value="SDE Intern" required></label>
-        <label>Target companies<input name="target_companies" value="Google, Flipkart" placeholder="Comma separated"></label>
-        <div class="row">
-          <label>College<input name="college"></label>
-          <label>Year
-            <select name="year"><option>1st</option><option>2nd</option><option selected>3rd</option><option>4th</option><option>Graduated</option></select>
-          </label>
-        </div>
-        <fieldset>
-          <legend>Comfort level</legend>
-          <div class="segmented">
-            <label><input type="radio" name="comfort_level" value="Beginner"><span>Beginner</span></label>
-            <label><input type="radio" name="comfort_level" value="Intermediate" checked><span>Intermediate</span></label>
-            <label><input type="radio" name="comfort_level" value="Advanced"><span>Advanced</span></label>
+  <!-- Sign in / sign up -->
+  <section id="auth" class="auth" hidden>
+    <div class="auth-card">
+      <div class="brand big">PrepPilot</div>
+      <p class="lede">Personalised interview prep: a roadmap, quizzes, coding practice and mock interviews, all saved to your account.</p>
+      <div class="auth-tabs">
+        <button data-mode="login" class="active">Sign in</button>
+        <button data-mode="signup">Create account</button>
+      </div>
+      <form id="auth-form" class="form">
+        <label>Email<input name="email" type="email" required autocomplete="email"></label>
+        <label>Password<input name="password" type="password" required minlength="6" autocomplete="current-password"></label>
+        <button class="primary block" type="submit" id="auth-submit">Sign in</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div id="app" class="shell" hidden>
+    <aside class="sidebar">
+      <div class="brand">PrepPilot</div>
+      <nav id="nav">
+        <button data-view="home">Home</button>
+        <button data-view="roadmap">Roadmap</button>
+        <button data-view="practice">Practice</button>
+        <button data-view="interview">Interview</button>
+        <button data-view="profile">Profile</button>
+      </nav>
+      <div class="side-progress" id="side-progress"></div>
+      <div class="account">
+        <div id="account-email" class="muted small"></div>
+        <button id="logout" class="link">Sign out</button>
+      </div>
+    </aside>
+
+    <main>
+      <!-- Home -->
+      <section id="view-home" class="view">
+        <h1 id="greeting">Welcome</h1>
+        <p class="lede" id="greeting-sub"></p>
+        <div id="continue"></div>
+        <div id="stats" class="stats"></div>
+        <div class="card"><h2>Recent activity</h2><div id="activity"></div></div>
+      </section>
+
+      <!-- Roadmap -->
+      <section id="view-roadmap" class="view">
+        <div class="head">
+          <div>
+            <h1>Four-week roadmap</h1>
+            <p class="lede">Tick topics off as you finish them. Click a topic to practise it.</p>
           </div>
-        </fieldset>
-        <label class="file">Resume (PDF, optional)<input type="file" name="resume" accept="application/pdf"></label>
-        <button class="primary" type="submit">Save profile</button>
-      </form>
-      <div id="resume-summary"></div>
-    </section>
+          <div class="actions"><button id="gen-roadmap" class="primary">Generate roadmap</button></div>
+        </div>
+        <div id="roadmap-progress"></div>
+        <div id="roadmap" class="weeks"></div>
+      </section>
 
-    <!-- Roadmap -->
-    <section id="view-roadmap" class="view">
-      <div class="head">
-        <div>
-          <h1>Four-week roadmap</h1>
-          <p class="lede">DSA, OS and System Design, weighted to your targets.</p>
+      <!-- Practice -->
+      <section id="view-practice" class="view">
+        <div class="head">
+          <div>
+            <h1>Practice</h1>
+            <p class="lede" id="practice-sub">Learn a topic, test yourself, then solve a problem on it.</p>
+          </div>
+          <div class="actions">
+            <select id="topic-select" aria-label="Topic"></select>
+            <button id="mark-done" class="ghost">Mark done</button>
+          </div>
         </div>
-        <div class="actions">
-          <button id="gen-roadmap" class="primary">Generate with Sarvam</button>
-          <button id="default-roadmap">Use default</button>
+        <div class="tabs" role="tablist">
+          <button data-tab="learn">Learn</button>
+          <button data-tab="quiz">Quiz</button>
+          <button data-tab="code">Code</button>
         </div>
-      </div>
-      <div id="roadmap" class="weeks"></div>
-    </section>
 
-    <!-- Practice -->
-    <section id="view-practice" class="view">
-      <h1>Practice</h1>
-      <div class="split">
-        <div class="card">
-          <h2>Topic breakdown</h2>
-          <select id="topic-select"></select>
-          <button id="explain" class="primary">Explain and quiz me</button>
-          <div id="topic-out" class="prose"></div>
+        <div id="tab-learn" class="tab">
+          <div class="card">
+            <div id="topic-out" class="prose"><div class="empty">Get a focused explanation of this topic, written for your target role.</div></div>
+            <button id="explain" class="primary">Explain this topic</button>
+          </div>
         </div>
-        <div class="card">
-          <h2>Code review</h2>
-          <label>Problem<textarea id="problem" rows="3">Given an array of integers and a target, return indices of two numbers that add up to target.</textarea></label>
-          <label>Your solution<textarea id="code" rows="9" class="mono">def two_sum(nums, target):
-    for i in range(len(nums)):
-        for j in range(i + 1, len(nums)):
-            if nums[i] + nums[j] == target:
-                return [i, j]</textarea></label>
-          <button id="review" class="primary">Review</button>
-          <div id="review-out" class="prose"></div>
-        </div>
-      </div>
-    </section>
 
-    <!-- Interview -->
-    <section id="view-interview" class="view">
-      <div class="head">
-        <div>
-          <h1>Mock interview</h1>
-          <p class="lede">Two questions grounded in your resume, then a verdict.</p>
+        <div id="tab-quiz" class="tab">
+          <div id="quiz" class="card quiz"></div>
         </div>
-        <div class="actions">
-          <select id="company"></select>
-          <select id="kind"><option>Technical</option><option>HR</option></select>
-          <button id="start" class="primary">Start</button>
+
+        <div id="tab-code" class="tab">
+          <div class="toolbar">
+            <div class="segmented">
+              <label><input type="radio" name="difficulty" value="Easy"><span>Easy</span></label>
+              <label><input type="radio" name="difficulty" value="Medium" checked><span>Medium</span></label>
+              <label><input type="radio" name="difficulty" value="Hard"><span>Hard</span></label>
+            </div>
+            <button id="new-problem" class="primary">New problem</button>
+          </div>
+          <div class="ide">
+            <div class="card problem" id="problem">
+              <div class="empty">Pick a difficulty and generate a problem on this topic.</div>
+            </div>
+            <div class="card editor-card">
+              <div class="editor-bar">
+                <select id="language" aria-label="Language">
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                </select>
+                <button id="reset-code" type="button" class="ghost">Reset</button>
+                <span class="hint">Ctrl/⌘ + Enter to submit</span>
+                <button id="review" class="primary">Submit for review</button>
+              </div>
+              <div id="editor"></div>
+            </div>
+          </div>
+          <div id="review-out"></div>
         </div>
-      </div>
-      <div id="chat" class="chat"></div>
-      <form id="answer-form" class="answer" hidden>
-        <textarea id="answer" rows="3" placeholder="Type your answer"></textarea>
-        <button class="primary" type="submit">Send</button>
-      </form>
-    </section>
-  </main>
+      </section>
+
+      <!-- Interview -->
+      <section id="view-interview" class="view">
+        <div class="head">
+          <div>
+            <h1>Mock interview</h1>
+            <p class="lede">An opening question and one follow-up grounded in your resume, then a verdict.</p>
+          </div>
+          <div class="actions">
+            <select id="company" aria-label="Company"></select>
+            <select id="kind" aria-label="Interview type"><option>Technical</option><option>HR</option></select>
+            <button id="start" class="primary">Start new</button>
+          </div>
+        </div>
+        <div id="chat" class="chat"><div class="empty">Choose a company and interview type, then start.</div></div>
+        <form id="answer-form" class="answer" hidden>
+          <textarea id="answer" rows="3" maxlength="4000" placeholder="Type your answer (Ctrl/⌘ + Enter to send)"></textarea>
+          <button class="primary" type="submit">Send</button>
+        </form>
+      </section>
+
+      <!-- Profile -->
+      <section id="view-profile" class="view">
+        <h1 id="profile-title">Your profile</h1>
+        <p class="lede">Your role, targets and resume shape the roadmap, quizzes, problems and interview questions.</p>
+        <div class="profile-grid">
+          <form id="profile-form" class="card form">
+            <label>Full name<input name="name" required maxlength="100" autocomplete="name"></label>
+            <label>Target role<input name="target_role" required maxlength="100" placeholder="e.g. SDE Intern, Backend Engineer"></label>
+            <label>Target companies<input name="target_companies" maxlength="300" placeholder="Comma separated, e.g. Google, Razorpay"></label>
+            <div class="row">
+              <label>College<input name="college" maxlength="200"></label>
+              <label>Year
+                <select name="year"><option value="">Select</option><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option><option>Graduated</option></select>
+              </label>
+            </div>
+            <fieldset>
+              <legend>Comfort level</legend>
+              <div class="segmented">
+                <label><input type="radio" name="comfort_level" value="Beginner"><span>Beginner</span></label>
+                <label><input type="radio" name="comfort_level" value="Intermediate" checked><span>Intermediate</span></label>
+                <label><input type="radio" name="comfort_level" value="Advanced"><span>Advanced</span></label>
+              </div>
+            </fieldset>
+            <label class="file">Resume (PDF, text or scanned, up to 5 MB)<input type="file" name="resume" accept="application/pdf"></label>
+            <button class="primary" type="submit" id="profile-submit">Save profile</button>
+          </form>
+          <div id="resume-summary"></div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <div id="toast" class="toast" hidden></div>
   <script src="/static/app.js"></script>
