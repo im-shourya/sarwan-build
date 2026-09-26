@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PrepPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">PrepPilot</div>
+    <nav id="nav">
+      <button data-view="onboarding" class="active"><span>1</span>Profile</button>
+      <button data-view="roadmap"><span>2</span>Roadmap</button>
+      <button data-view="practice"><span>3</span>Practice</button>
+      <button data-view="interview"><span>4</span>Interview</button>
+    </nav>
+    <div id="who" class="who"></div>
+  </header>
+
+  <main>
+    <!-- Onboarding -->
+    <section id="view-onboarding" class="view active">
+      <h1>Set up your prep</h1>
+      <p class="lede">Your role, targets and resume shape the roadmap and the interview questions.</p>
+      <form id="profile-form" class="card form">
+        <label>Target role<input name="target_role" value="SDE Intern" required></label>
+        <label>Target companies<input name="target_companies" value="Google, Flipkart" placeholder="Comma separated"></label>
+        <div class="row">
+          <label>College<input name="college"></label>
+          <label>Year
+            <select name="year"><option>1st</option><option>2nd</option><option selected>3rd</option><option>4th</option><option>Graduated</option></select>
+          </label>
+        </div>
+        <fieldset>
+          <legend>Comfort level</legend>
+          <div class="segmented">
+            <label><input type="radio" name="comfort_level" value="Beginner"><span>Beginner</span></label>
+            <label><input type="radio" name="comfort_level" value="Intermediate" checked><span>Intermediate</span></label>
+            <label><input type="radio" name="comfort_level" value="Advanced"><span>Advanced</span></label>
+          </div>
+        </fieldset>
+        <label class="file">Resume (PDF, optional)<input type="file" name="resume" accept="application/pdf"></label>
+        <button class="primary" type="submit">Save profile</button>
+      </form>
+      <div id="resume-summary"></div>
+    </section>
+
+    <!-- Roadmap -->
+    <section id="view-roadmap" class="view">
+      <div class="head">
+        <div>
+          <h1>Four-week roadmap</h1>
+          <p class="lede">DSA, OS and System Design, weighted to your targets.</p>
+        </div>
+        <div class="actions">
+          <button id="gen-roadmap" class="primary">Generate with Sarvam</button>
+          <button id="default-roadmap">Use default</button>
+        </div>
+      </div>
+      <div id="roadmap" class="weeks"></div>
+    </section>
+
+    <!-- Practice -->
+    <section id="view-practice" class="view">
+      <h1>Practice</h1>
+      <div class="split">
+        <div class="card">
+          <h2>Topic breakdown</h2>
+          <select id="topic-select"></select>
+          <button id="explain" class="primary">Explain and quiz me</button>
+          <div id="topic-out" class="prose"></div>
+        </div>
+        <div class="card">
+          <h2>Code review</h2>
+          <label>Problem<textarea id="problem" rows="3">Given an array of integers and a target, return indices of two numbers that add up to target.</textarea></label>
+          <label>Your solution<textarea id="code" rows="9" class="mono">def two_sum(nums, target):
+    for i in range(len(nums)):
+        for j in range(i + 1, len(nums)):
+            if nums[i] + nums[j] == target:
+                return [i, j]</textarea></label>
+          <button id="review" class="primary">Review</button>
+          <div id="review-out" class="prose"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interview -->
+    <section id="view-interview" class="view">
+      <div class="head">
+        <div>
+          <h1>Mock interview</h1>
+          <p class="lede">Two questions grounded in your resume, then a verdict.</p>
+        </div>
+        <div class="actions">
+          <select id="company"></select>
+          <select id="kind"><option>Technical</option><option>HR</option></select>
+          <button id="start" class="primary">Start</button>
+        </div>
+      </div>
+      <div id="chat" class="chat"></div>
+      <form id="answer-form" class="answer" hidden>
+        <textarea id="answer" rows="3" placeholder="Type your answer"></textarea>
+        <button class="primary" type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -12,6 +12,14 @@
 
 ```bash
 pip3 install -r requirements.txt
-echo "SARVAM_API_KEY=your_key" > .env
-streamlit run app.py
+cp .env.example .env   # fill in the keys
+uvicorn server:app --reload
 ```
+
+Without `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` the app keeps data in memory (lost on restart).
+
+## Deploying
+
+1. Run `supabase/schema.sql` in the Supabase SQL editor.
+2. Deploy on Render with `render.yaml` (Docker), or run the `Dockerfile` on any host.
+3. Set `SARVAM_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` as environment variables.

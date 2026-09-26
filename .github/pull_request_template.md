@@ -10,5 +10,5 @@
 ## Checklist
 - [ ] Scoped to one feature or fix
 - [ ] No secrets committed (`.env` stays local)
-- [ ] App starts: `streamlit run app.py`
+- [ ] App starts: `uvicorn server:app --reload`
 - [ ] Python compiles: `python3 -m py_compile *.py`
